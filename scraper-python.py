@@ -42,6 +42,7 @@ def scrape(inputURL):
     #terminal feedback
     print(f"Scraper for {inputURL} was successful.")
     
+
     return text
 
 #function that checks if a file already exists, writing a new one if it doesn't, or appending if it does
@@ -50,6 +51,7 @@ def writeTextFile(string):
         now = datetime.now()
         file.write("Entry time: " + now.strftime("%d/%m/%Y %H:%M:%S") + '\n')
         file.write(string + '\n\nEnd of response\n\n')
+
 
 if __name__ == '__main__':
 
