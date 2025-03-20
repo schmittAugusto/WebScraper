@@ -14,8 +14,7 @@ load_dotenv()
 os.environ["OPENAI_API_KEY"]=os.getenv("OPENAI_API_KEY") 
 client = OpenAI(api_key = os.environ["OPENAI_API_KEY"], base_url="https://api.deepseek.com")
 
-#testing new things so I know I can properly use git commands and that I have cleaned old history
-print("Test is successful. New version is clear.\n")
+#I think I have now fully cleaned my local repo history as well as the remote one. This push is intended to test that.
 
 #Sends a string prompt to deepseek and returns its response
 def chat_with_deepseek(prompt):
@@ -28,7 +27,6 @@ def chat_with_deepseek(prompt):
     stream=False
 )
     return response.choices[0].message.content
- 
 
 
 #Scrapes a website using a HTML parser. Reads the <p> elements and returns a 400 character text.
