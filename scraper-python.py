@@ -2,6 +2,7 @@
 # To run this script, paste `python scraper-python.py` in the terminal
 
 import requests
+from datetime import datetime
 import os
 from dotenv import load_dotenv
 from openai import OpenAI
@@ -41,10 +42,14 @@ def scrape(inputURL):
     #terminal feedback
     print(f"Scraper for {inputURL} was successful.")
     
-    #takes 400 first characters from that previous string
-    #truncatedText = listToText[:400]
-
     return text
+
+#function that checks if a file already exists, writing a new one if it doesn't, or appending if it does
+def writeTextFile(string):
+    with open("textLog.txt", "a") as file:
+        now = datetime.now()
+        file.write("Entry time: " + now.strftime("%d/%m/%Y %H:%M:%S") + '\n')
+        file.write(string + '\n\nEnd of response\n\n')
 
 if __name__ == '__main__':
 
@@ -55,20 +60,24 @@ if __name__ == '__main__':
     #evokes the scrape function and stores the return text into a variable
     messageEN = scrape(urlEN)
     messagePT = scrape(urlPT)
-
-    #print(messageEN)
-    #print("SEGUNDO ARTIGO")
-    #print(messagePT)
-    
+       
     #defines the prompt with a simple order and the text that was scraped
     prompt = f"""I extracted two texts from different sources, but regarding the same topic: the Brazilian Newspaper "Folha de São Paulo". I want you to process these texts and output the following:
-    A- a summary regarding the common topic, which should be neutral and provide a consensus of the points of view between sources. This summary should be limited to 300 words
-    B- a brief description of additions and omissions from source 1 in comparison to source 2. This should be limited to 100 words
-    C- a brief description of additions and omissions from source 2 in comparison to source 1. This should be limited to 100 words
+    A- a summary of the processed content, which should be of neutral tone and provide only the consensual aspects and points of view between the different sources. This summary should be limited to 300 words
+    B- a brief description of additions from source 1 that are not presented by source 2. This should be limited to 100 words
+    C- a brief description of additions from source 2 that are not presented by source 1. This should be limited to 100 words
+
+    Please restrain from being repetitive and keep neutral tone throughout your answer. 
+
     These are the mentioned texts:
+
     Text 1 (Source 1): <<<{messageEN}>>>;
-    Text 2 (Source 2): <<<{messagePT}>>>"""
+
+    Text 2 (Source 2): <<<{messagePT}>>>."""
+
+    
 
     #prints the response of the AI chat
-    
-    print(chat_with_deepseek(prompt))
+    chatResponse = chat_with_deepseek(prompt)
+    writeTextFile(chatResponse)
+    print(chatResponse)
