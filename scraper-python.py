@@ -14,6 +14,8 @@ load_dotenv()
 os.environ["OPENAI_API_KEY"]=os.getenv("OPENAI_API_KEY") 
 client = OpenAI(api_key = os.environ["OPENAI_API_KEY"], base_url="https://api.deepseek.com")
 
+#testing changes for github secrets and privacy settings on a public repo
+
 #Sends a string prompt to deepseek and returns its response
 def chat_with_deepseek(prompt):
     response = client.chat.completions.create(
