@@ -7,6 +7,11 @@ import os
 from dotenv import load_dotenv
 from openai import OpenAI
 from bs4 import BeautifulSoup
+import re  # Add import for regular expressions
+import imaplib
+import email
+from email.header import decode_header
+import html2text
 
 #setup the client (secret key) and the service (deepseek)
 
@@ -46,6 +51,99 @@ def scrape(inputURL):
 
     return text
 
+
+
+def scrape_email_content(email_address, password, sender_filter=None, imap_server="imap.gmail.com", max_emails=5):
+    """
+    Connects to an email account via IMAP and scrapes content from emails.
+    Args:
+        email_address: The email address to connect to
+        password: The password or app-specific password
+        sender_filter: Email address to filter by sender (optional)
+        imap_server: IMAP server address (default is Gmail)
+        max_emails: Maximum number of recent emails to scrape
+    Returns:
+        A list of dictionaries containing email data
+    """
+    try:
+        # Connect to the IMAP server
+        imap = imaplib.IMAP4_SSL(imap_server)
+        imap.login(email_address, password)
+        
+        # Select the mailbox (inbox by default)
+        imap.select("INBOX")
+        
+        # Search for emails with optional sender filter
+        if sender_filter:
+            _, message_numbers = imap.search(None, f'FROM "{sender_filter}"')
+        else:
+            _, message_numbers = imap.search(None, "ALL")
+            
+        email_ids = message_numbers[0].split()
+        
+        # Get the last max_emails number of emails
+        email_ids = email_ids[-max_emails:] if len(email_ids) > max_emails else email_ids
+        
+        # List to store email data
+        emails_data = []
+        
+        # HTML to text converter
+        h = html2text.HTML2Text()
+        h.ignore_links = True
+        
+        for email_id in email_ids:
+            # Fetch the email data
+            _, msg_data = imap.fetch(email_id, "(RFC822)")
+            email_body = msg_data[0][1]
+            message = email.message_from_bytes(email_body)
+            
+            # Get subject
+            subject = decode_header(message["subject"])[0][0]
+            if isinstance(subject, bytes):
+                subject = subject.decode()
+            
+            # Get sender
+            from_ = decode_header(message["from"])[0][0]
+            if isinstance(from_, bytes):
+                from_ = from_.decode()
+            
+            # Get date
+            date = message["date"]
+            
+            # Get content
+            content = ""
+            if message.is_multipart():
+                # Handle multipart messages
+                for part in message.walk():
+                    if part.get_content_type() == "text/plain":
+                        content += part.get_payload(decode=True).decode()
+                    elif part.get_content_type() == "text/html":
+                        html_content = part.get_payload(decode=True).decode()
+                        content += h.handle(html_content)
+            else:
+                # Handle plain text emails
+                content = message.get_payload(decode=True).decode()
+            
+            email_data = {
+                "subject": subject,
+                "from": from_,
+                "date": date,
+                "content": content
+            }
+            
+            emails_data.append(email_data)
+            
+        imap.close()
+        imap.logout()
+        
+        print(f"Successfully scraped {len(emails_data)} emails" + 
+              (f" from sender {sender_filter}" if sender_filter else ""))
+        return emails_data
+        
+    except Exception as e:
+        print(f"Error scraping emails: {str(e)}")
+        return []
+
 #function that checks if a file already exists, writing a new one if it doesn't, or appending if it does
 def writeTextFile(string):
     with open("textLog.txt", "a") as file:
@@ -77,10 +175,16 @@ if __name__ == '__main__':
     Text 1 (Source 1): <<<{messageEN}>>>;
 
     Text 2 (Source 2): <<<{messagePT}>>>."""
-
     
-
     #prints the response of the AI chat
-    chatResponse = chat_with_deepseek(prompt)
-    writeTextFile(chatResponse)
-    print(chatResponse)
+    #chatResponse = chat_with_deepseek(prompt)
+    #riteTextFile(chatResponse)
+    #rint(chatResponse)
+
+    #email information to test the email scraping function
+    email_address = "fact.bridge.extract@gmail.com"
+    password = "awpaovraofzcfldt"
+    emails_data = scrape_email_content(email_address, password, "vspipano@gmail.com")
+    for email in emails_data:
+        print(f"Email content: {email['content']}\n")
+    print("End of email scraping.")
